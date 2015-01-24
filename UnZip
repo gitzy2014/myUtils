@@ -1,0 +1,75 @@
+
+
+
+
+
+import java.io.File;
+
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+
+import Decoder.BASE64Decoder;
+
+import net.lingala.zip4j.core.ZipFile;
+import net.lingala.zip4j.exception.ZipException;
+
+public class ZIP {
+	
+	/**
+	 * 获取注释
+	 * */
+	public static String getComment(String zipFile)throws ZipException{
+		
+			ZipFile zFile = new ZipFile(zipFile); // 首先创建ZipFile指向磁盘上的.zip文件    
+	
+		  if (!zFile.isValidZipFile()) {   // 验证.zip文件是否合法，包括文件是否存在、是否为zip文件、是否被损坏等    
+	           return null;   
+	        }  
+		 
+		return   zFile.getComment();
+		
+	}
+	
+	/** 
+	 * ZIP压缩文件操作工具类 
+	 * 支持密码 
+	 * 依赖zip4j开源项目(http://www.lingala.net/zip4j/) 
+	 * 版本1.3.1 
+	 * @author zhangyu 
+	 */  
+	public static void unzip(String zipFile, String dest, String passwd) throws ZipException {    
+        ZipFile zFile = new ZipFile(zipFile);  // 首先创建ZipFile指向磁盘上的.zip文件    
+//        zFile.setFileNameCharset("GBK");       // 设置文件名编码，在GBK系统中需要设置    
+        if (!zFile.isValidZipFile()) {   // 验证.zip文件是否合法，包括文件是否存在、是否为zip文件、是否被损坏等    
+            throw new ZipException("压缩文件不合法,可能被损坏.");    
+        }    
+      
+        File destDir = new File(dest);     // 解压目录    
+        if (destDir.isDirectory() && !destDir.exists()) {    
+            destDir.mkdir();    
+        }    
+        if (zFile.isEncrypted()) {    
+            zFile.setPassword(passwd.toCharArray());  // 设置密码    
+        }    
+        zFile.extractAll(dest);      // 将文件抽出到解压目录(解压)    
+        
+    }   
+	
+	/**
+	 * 解密
+	 * */
+	public static String decrypt(String text) throws Exception {  
+		if(text == null || text == "")
+        	return null; 
+		
+		byte[] buffer = new BASE64Decoder().decodeBuffer(text);
+		byte[] key = new byte[16];
+		byte[] data = new byte[buffer.length - 16];
+		System.arraycopy(buffer, 0, data, 0, data.length);
+		System.arraycopy(buffer, data.length, key, 0, key.length);
+		Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+		cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key, "AES"));
+		data = cipher.doFinal(data);
+	    return new String(data, "utf-8");
+	}
+}
