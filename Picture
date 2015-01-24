@@ -1,0 +1,127 @@
+  /**
+     * 显示选择对话框
+     */
+        private void showDialog() {
+        	new AlertDialog.Builder(this)
+            .setTitle("设置头像")
+            .setItems(items,new DialogInterface.OnClickListener(){
+
+				@Override
+				public void onClick(DialogInterface arg0, int arg1) {
+					 switch (arg1) {
+					 case 0:
+						 Intent intentFromGallery = new Intent();
+						 intentFromGallery.setType("image/*"); // 设置文件类型
+						 intentFromGallery.setAction(Intent.ACTION_GET_CONTENT);
+						 startActivityForResult(intentFromGallery,IMAGE_REQUEST_CODE);
+						 break;
+					 case 1:
+						 Intent intentFromCapture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+						 // 判断存储卡是否可以用，可用进行存储
+                         if (hasSdcard()) {
+                        	 startActivityForResult(intentFromCapture, CAMERA_REQUEST_CODE);
+                         }else{
+                        	 Toast.makeText(getApplicationContext(), "请插入sd卡", Toast.LENGTH_LONG)  
+                             .show();  
+                         }
+                         
+						 break;
+					 }					
+				}
+            	
+            }).setNegativeButton("取消", new DialogInterface.OnClickListener(){
+
+				@Override
+				public void onClick(DialogInterface arg0, int arg1) {
+					arg0.dismiss();					
+				}
+            	
+            } ).show();
+        	
+                }
+
+ @Override
+        protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        	super.onActivityResult(requestCode, resultCode, data);
+        	 if (resultCode != RESULT_OK) {  
+                 return;  
+             } else {  
+                 switch (requestCode) {  
+                 case IMAGE_REQUEST_CODE:  
+                     resizeImage(data.getData());  
+                     break;  
+                 case CAMERA_REQUEST_CODE:  
+                     if (hasSdcard()) {  
+                         resizeImage( Uri.fromFile(new File(Environment
+                                 .getExternalStorageDirectory(),IMAGE_FILE_NAME)));  
+                     } else {  
+                         Toast.makeText(getApplicationContext(), "未找到存储卡，无法存储照片！",  
+                                 Toast.LENGTH_LONG).show();  
+                     }  
+                     break;  
+       
+                 case RESULT_REQUEST_CODE:  
+                     if (data != null) {  
+                         showResizeImage(data);  
+                     }  
+                     break;  
+                 }  
+             }  
+       
+        }
+	
+	  /**
+             * 检查是否存在SDCard
+             * @return
+             */
+            public static boolean hasSdcard(){
+                    String state = Environment.getExternalStorageState();
+                    if(state.equals(Environment.MEDIA_MOUNTED)){
+                            return true;
+                    }else{
+                            return false;
+                    }
+            }
+            
+            
+               /**
+             * 裁剪图片
+             * */
+            public void resizeImage(Uri uri) {  
+                Intent intent = new Intent("com.android.camera.action.CROP");  
+                intent.setDataAndType(uri, "image/*");  
+                intent.putExtra("crop", "true");  
+                intent.putExtra("aspectX", 1);  
+                intent.putExtra("aspectY", 1);  
+                intent.putExtra("outputX", 50);  
+                intent.putExtra("outputY", 50);  
+                intent.putExtra("return-data", true);  
+                startActivityForResult(intent, RESULT_REQUEST_CODE);  
+            }  
+            
+            
+         /*
+         * 显示头像
+         */
+            @SuppressWarnings("deprecation")
+			private void showResizeImage(Intent data) {  
+                Bundle extras = data.getExtras();  
+                if (extras != null) {  
+                    Bitmap photo =(Bitmap) extras.getParcelable("data");  
+                    byte[] bt = Bitmap2Bytes(photo);
+                    byte[] encod = Base64.encode(bt,Base64.DEFAULT);
+                    Drawable drawable = new BitmapDrawable(photo);  
+                    myface.setImageDrawable(drawable);  
+                    
+                   uploadFile(encod);
+                }  
+            }  
+            
+            
+        
+            // Bitmap转换成byte[]  
+            public byte[] Bitmap2Bytes(Bitmap bm) {  
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();  
+                bm.compress(Bitmap.CompressFormat.JPEG, 100, baos);  
+                return baos.toByteArray();  
+            }  
